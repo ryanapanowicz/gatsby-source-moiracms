@@ -15,7 +15,7 @@ const ASSET_NODE_TYPE = `Asset`;
 const QUERY_ITEM_LIMIT = 9999;
 
 const client = new ApolloClient({
-    link: createHttpLink({ uri: "http://localhost:8000/graphql", fetch }),
+    link: createHttpLink({ uri: "http://127.0.0.1:8000/graphql", fetch }),
     cache: new InMemoryCache(),
 });
 
