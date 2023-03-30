@@ -14,10 +14,39 @@ const ASSET_NODE_TYPE = `Asset`;
 // Set limit to a unlikely amount to prevent default pagination
 const QUERY_ITEM_LIMIT = 9999;
 
-const client = new ApolloClient({
-    link: createHttpLink({ uri: "http://127.0.0.1:8000/graphql", fetch }),
-    cache: new InMemoryCache(),
-});
+exports.pluginOptionsSchema = ({ Joi }) => {
+    return Joi.object({
+        endpoint: Joi.string()
+            .description(`The GraphQL endpoint URL for MoiraCMS.`)
+            .required(),
+    }).external(async ({ endpoint }) => {
+        try {
+            const client = new ApolloClient({
+                link: createHttpLink({
+                    uri: endpoint,
+                    fetch,
+                }),
+                cache: new InMemoryCache(),
+            });
+
+            await client.query({
+                query: gql`
+                    query {
+                        projects(first: 1) {
+                            data {
+                                id
+                            }
+                        }
+                    }
+                `,
+            });
+        } catch (err) {
+            throw new Error(
+                `Cannot access MoiraCMS using ensdpoint "${endpoint}".`
+            );
+        }
+    });
+};
 
 // called each time a node is created
 exports.onCreateNode = async ({
@@ -47,7 +76,15 @@ exports.onCreateNode = async ({
     }
 };
 
-exports.sourceNodes = async ({ actions, createContentDigest }) => {
+exports.sourceNodes = async (
+    { actions, createContentDigest },
+    { endpoint }
+) => {
+    const client = new ApolloClient({
+        link: createHttpLink({ uri: endpoint, fetch }),
+        cache: new InMemoryCache(),
+    });
+
     const { createNode } = actions;
     const { data } = await client.query({
         query: gql`
